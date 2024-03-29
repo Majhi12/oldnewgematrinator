@@ -476,83 +476,83 @@ function ToggleCipher(impVal) {
 	var cName, x
 
 	switch (impVal.toLowerCase()) {
-		case "s;efr":
-			cName = "Full Reduction";
+		case "s;red":
+			cName = "Reduction";
 			break;
-		case "s;efk":
-			cName = "Full Reduction KV";
+		case "s;kv":
+			cName = "KV Exception";
 			break;
-		case "s;esr":
+		case "s;sr":
 			cName = "Single Reduction";
 			break;
-		case "s;esk":
-			cName = "Single Reduction KV";
+		case "s;skv":
+			cName = "SKV Exception";
 			break;
-		case "s;eo":
-			cName = "English Ordinal";
+		case "s;or":
+			cName = "Ordinal";
 			break;
-		case "s;ee":
-			cName = "English Extended";
+		case "s;st":
+			cName = "Standard";
 			break;
-		case "s;eba":
-			cName = "Francis Bacon";
+		case "s;ca":
+			cName = "Capitals Added";
 			break;
-		case "s;ebc":
-			cName = "Franc Baconis";
+		case "s;cm":
+			cName = "Capitals Mixed";
 			break;
 		case "s;sat":
-			cName = "Satanic";
+			cName = "Satanic Gematria";
 			break;
-		case "s;rfr":
-			cName = "Reverse Full Reduction";
+		case "s;rr":
+			cName = "Reverse Reduction";
 			break;
-		case "s;rfe":
-			cName = "Reverse Full Reduction EP";
+		case "s;ep":
+			cName = "EP Exception";
 			break;
 		case "s;rsr":
 			cName = "Reverse Single Reduction";
 			break;
-		case "s;rse":
-			cName = "Reverse Single Reduction EP";
+		case "s;ehp":
+			cName = "EHP Exception";
 			break;
-		case "s;ro":
-			cName = "Reverse Ordinal";
+		case "s;rev":
+			cName = "Reverse";
 			break;
-		case "s;re":
-			cName = "Reverse Extended";
+		case "s;rst":
+			cName = "Reverse Standard";
 			break;
-		case "s;rba":
-			cName = "Reverse Francis Bacon";
+		case "s;rca":
+			cName = "Reverse Caps Added";
 			break;
-		case "s;rbc":
-			cName = "Reverse Franc Baconis";
+		case "s;rcm":
+			cName = "Reverse Caps Mixed";
 			break;
 		case "s;rsat":
 			cName = "Reverse Satanic";
 			break;
-		case "s;je":
-			cName = "Jewish";
+		case "s;la":
+			cName = "Latin";
 			break;
-		case "s;jr":
-			cName = "Jewish Reduction";
+		case "s;lr":
+			cName = "Latin Reduction";
 			break;
-		case "s;jo":
-			cName = "Jewish Ordinal";
+		case "s;lo":
+			cName = "Latin Ordinal";
 			break;
-		case "s;alw":
-			cName = "ALW Kabbalah";
+		case "s;eq":
+			cName = "English Qaballa";
 			break;
-		case "s;kfw":
-			cName = "KFW Kabbalah";
+		case "s;cx":
+			cName = "Cipher X";
 			break;
-		case "s;lch":
-			cName = "LCH Kabbalah";
+		case "s;tq":
+			cName = "Trigrammaton Qabalah";
 			break;
-		case "s;esu":
-			cName = "English Sumerian";
+		case "s;su":
+			cName = "Sumerian";
 			break;
 		case "s;rsu":
-			cName = "Reverse English Sumerian";
+			cName = "Reverse Sumerian";
 			break;
 		case "s;pr":
 			cName = "Primes";
@@ -578,8 +578,17 @@ function ToggleCipher(impVal) {
 		case "s;cha":
 			cName = "Chaldean";
 			break;
+		case "s;key":
+			cName = "Keypad";
+			break;
+		case "s;fib":
+			cName = "Fibonacci";
+			break;
 		case "s;aq":
 			cName = "Alphanumeric Qabbala";
+			break;
+		case "s;as":
+			cName = "Alphanumeric Satanic";
 			break;
 		case "s;all":
 			Add_AllCiphers();
