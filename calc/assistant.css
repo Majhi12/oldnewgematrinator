@@ -12,6 +12,9 @@
   --ga-shadow: 0 0 10px rgba(82,255,168,0.25), 0 0 22px rgba(82,255,168,0.15);
 }
 
+/* Lock body scroll when assistant open */
+body.ga-lock { overflow:hidden !important; }
+
 #AssistantRoot { position: fixed; inset: 0; z-index: 9999; display:none; }
 #AssistantBackdrop { position:absolute; inset:0; backdrop-filter: blur(6px); background:rgba(10,15,13,0.78); }
 #AssistantWindow { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width: min(1000px, 92vw); height: min(680px, 88vh); display:flex; flex-direction:column; background:var(--ga-panel); border:1px solid var(--ga-border); border-radius:14px; box-shadow:var(--ga-shadow); font-family: 'JetBrains Mono', monospace; color:var(--ga-text); }
@@ -39,10 +42,11 @@
 #CipherSnapshot th { text-align:left; font-weight:600; color:var(--ga-accent); font-size:11px; padding:2px 4px; border-bottom:1px solid var(--ga-border); }
 #CipherSnapshot td { padding:2px 4px; border-bottom:1px solid rgba(255,255,255,0.04); }
 
-#ChatStream { flex:1; overflow:auto; padding:14px 18px 10px 18px; font-size:13px; line-height:1.45; }
+#ChatStream { flex:1; overflow:auto; padding:14px 18px 10px 18px; font-size:13px; line-height:1.45; overscroll-behavior:contain; }
 .chat-msg { margin-bottom:14px; animation: fadeIn 0.25s ease; }
 .chat-role { font-size:10px; font-weight:600; letter-spacing:1px; opacity:0.6; margin-bottom:3px; }
-.chat-bubble { background: #101c17; border:1px solid var(--ga-border); padding:10px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-word; max-height:340px; overflow:auto; scrollbar-width:thin; }
+.chat-bubble { background: #101c17; border:1px solid var(--ga-border); padding:10px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-word; overflow-wrap:break-word; }
+.chat-bubble code { font-family: 'JetBrains Mono', monospace; font-size:12px; }
 .chat-bubble::-webkit-scrollbar { width:6px; }
 .chat-bubble::-webkit-scrollbar-thumb { background:rgba(82,255,168,0.35); border-radius:6px; }
 .chat-bubble::-webkit-scrollbar-thumb:hover { background:rgba(82,255,168,0.55); }

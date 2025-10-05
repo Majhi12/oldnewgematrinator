@@ -83,7 +83,12 @@ function toggleAssistant(force) {
   const root = document.getElementById('AssistantRoot');
   if (typeof force === 'boolean') assistantOpen = force; else assistantOpen = !assistantOpen;
   root.style.display = assistantOpen ? 'block' : 'none';
-  if (assistantOpen) setTimeout(()=> document.getElementById('AssistantInput')?.focus(), 50);
+  if (assistantOpen) {
+    document.body.classList.add('ga-lock');
+    setTimeout(()=> document.getElementById('AssistantInput')?.focus(), 50);
+  } else {
+    document.body.classList.remove('ga-lock');
+  }
 }
 
 function refreshAssistantSnapshot() {
@@ -113,7 +118,9 @@ function renderAssistantMessages(){
       <div class="chat-role">${m.role.toUpperCase()}</div>
       <div class="chat-bubble">${escapeHtml(m.content)}</div>
     </div>`).join('');
-  stream.scrollTop = stream.scrollHeight;
+  // Auto-scroll to latest unless user has scrolled up (within 60px of bottom considered sticky)
+  const atBottom = Math.abs((stream.scrollHeight - stream.clientHeight) - stream.scrollTop) < 60;
+  if (atBottom) stream.scrollTop = stream.scrollHeight;
 }
 
 function escapeHtml(str){
