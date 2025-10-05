@@ -19,6 +19,7 @@ interface Payload {
   cipherValues?: { cipher: string; value: number | null }[];
   history?: ChatHistoryItem[];
   meta?: Record<string, unknown>;
+  image?: string | null; // base64 (no data: prefix)
 }
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
@@ -29,7 +30,7 @@ if (!OPENAI_API_KEY) {
   console.error('Missing OPENAI_API_KEY secret');
 }
 
-async function callOpenAI(messages: { role: string; content: string }[]) {
+async function callOpenAI(messages: { role: string; content: string }[], imageB64?: string | null) {
   const resp = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -38,8 +39,9 @@ async function callOpenAI(messages: { role: string; content: string }[]) {
     },
     body: JSON.stringify({
       model: MODEL_NAME,
-      messages,
+      messages: imageB64 ? messages.map(m => m) : messages,
       temperature: 0.4,
+      ...(imageB64 ? { vision: [{ type: 'input_image', image_base64: imageB64 }] } : {})
     })
   });
   if (!resp.ok) {
@@ -80,7 +82,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const { message, phrase, cipherValues, history } = payload || {};
+  const { message, phrase, cipherValues, history, image } = payload || {};
   if (!message || typeof message !== 'string') {
     return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
@@ -119,7 +121,7 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
   messages.push({ role: 'user', content: `${message}${enrichmentBlock ? '\n\nContext:\n'+enrichmentBlock : ''}` });
 
   try {
-    const reply = await callOpenAI(messages);
+  const reply = await callOpenAI(messages, image);
     return new Response(JSON.stringify({ reply, used: { model: MODEL_NAME, tavily: !!tavilyData } }), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control':'no-store' }
     });

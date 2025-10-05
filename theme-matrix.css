@@ -24,6 +24,11 @@ html,body{
 #gv-header a{ color:var(--accent); }
 #gv-header a:hover{ text-shadow:var(--shadow-neon); }
 #gv-logo{ max-width:100%; height:auto; }
+/* Enhanced logo sizing variants */
+#gv-logo{ height:92px; transition:filter .25s, transform .25s; }
+#gv-logo:hover{ filter:drop-shadow(0 0 10px rgba(82,255,168,.55)); transform:translateY(-2px); }
+@media (max-width:900px){ #gv-logo{ height:80px; } }
+@media (max-width:640px){ #gv-logo{ height:64px; } }
 @media (max-width:760px){
   #gv-header{ flex-direction:column; align-items:flex-start !important; }
   #gv-header .gv-logo-wrap{ justify-content:flex-start; }
