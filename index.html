@@ -41,13 +41,7 @@
 <!-- screenshot, html2canvas -->
 <center><div id="screenshotToolbar"></div></center><p>
 <center>
-<div id="supabaseToolbar" style="margin-bottom:10px; font-family: sans-serif; font-size: 13px;">
-	<button onclick="loadHistoryFromSupabase()">Load Remote History</button>
-	<button onclick="queueSupabaseSync()">Sync Now</button>
-	<button onclick="clearRemoteHistory()">Clear Remote</button>
-	<span style="opacity:0.5; margin-left:8px;">Supabase:</span>
-	<span id="supabaseStatus" style="opacity:0.85; font-weight:600;">Idle</span>
-</div>
+<!-- Supabase toolbar removed (silent background sync). If you need it back, reintroduce markup with id="supabaseToolbar" -->
 </center>
 	
 <center>
@@ -79,34 +73,7 @@
 	
 </center>
 
-<!-- Optional ambient matrix rain background -->
-<script>
-(function(){
-	const cvs = document.createElement('canvas');
-	Object.assign(cvs.style,{ position:'fixed', inset:'0', zIndex:'-1' });
-	document.body.appendChild(cvs);
-	const ctx = cvs.getContext('2d');
-	let w,h,cols,ys;
-	function resize(){
-		w=cvs.width=window.innerWidth; h=cvs.height=window.innerHeight;
-		cols=Math.floor(w/14); ys=Array(cols).fill(0);
-	}
-	window.addEventListener('resize',resize); resize();
-	function frame(){
-		ctx.fillStyle='rgba(10,15,13,0.25)';
-		ctx.fillRect(0,0,w,h);
-		ctx.fillStyle='#52ffa8';
-		ctx.font='14px JetBrains Mono';
-		ys.forEach((y,i)=>{
-			const t=String.fromCharCode(0x30A0+Math.random()*96);
-			ctx.fillText(t,i*14,y);
-			ys[i]= y>h+Math.random()*1000 ? 0 : y+18;
-		});
-		requestAnimationFrame(frame);
-	}
-	frame();
-})();
-</script>
+<!-- Removed duplicate inline matrix rain script (coderain.js provides enhanced + toggle). -->
 
 </body>
 
