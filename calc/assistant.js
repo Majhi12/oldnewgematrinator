@@ -158,7 +158,7 @@ async function sendAssistantPrompt(){
     const payload = await buildAssistantPayloadAsync(value);
     const client = (window.supabaseClient || (window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null));
     if (!client) throw new Error('Supabase client not ready');
-    const { data, error } = await client.functions.invoke(SUPABASE_FUNCTION_NAME, { body: payload });
+  const { data, error } = await client.functions.invoke(SUPABASE_FUNCTION_NAME, { body: payload });
     if (error) {
       console.error('[Assistant] Edge function error', error);
       throw error;
@@ -167,7 +167,14 @@ async function sendAssistantPrompt(){
       console.error('[Assistant] Function responded with error field:', data.error);
       throw new Error(data.error);
     }
-    const reply = (data && (data.reply || data.answer || data.content)) ? (data.reply || data.answer || data.content) : JSON.stringify(data);
+    let reply = (data && (data.reply || data.answer || data.content)) ? (data.reply || data.answer || data.content) : JSON.stringify(data);
+    // Remove any residual provider wording if appears
+    reply = reply.replace(/\bTavily\b/gi,'web sources');
+    // Append sources list if present
+    if (Array.isArray(data?.sources) && data.sources.length) {
+      const srcList = data.sources.map(s => `• ${s.title} (${s.url})`).join('\n');
+      reply += `\n\nSources:\n${srcList}`;
+    }
     pushAssistantMessage('assistant', reply);
     setAssistantStatus('Ready');
   } catch (e){

@@ -2,13 +2,13 @@
 // deno-lint-ignore-file no-explicit-any
 // <reference lib="deno.unstable" />
 // <reference lib="dom" />
-// Runtime: Deno (Supabase). Handles AI + optional Tavily search enrichment.
+// Runtime: Deno (Supabase). Handles AI + optional web search enrichment.
 // Environment variables (set in Supabase Dashboard > Project Settings > Secrets):
 //   OPENAI_API_KEY      (required)
 //   OPENAI_MODEL        (optional; overrides MODEL_NAME)
 //   MODEL_NAME          (legacy optional)
 //   OPENAI_BASE_URL     (optional; custom/proxy base, e.g. https://api.openai.com/v1 )
-//   TAVILY_API_KEY      (optional; enables web enrichment on demand)
+//   TAVILY_API_KEY      (optional; enables automatic web enrichment per query)
 // Defaults:
 //   Model falls back to 'gpt-4o' instead of mini variant unless overridden.
 // Deployment:
@@ -142,10 +142,14 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
   }
 
-  // Base system prompt
-  let system = `You are the GematriaVerse Assistant. Provide insightful but concise analysis of gematria values.
-If cipherValues are supplied, reference notable patterns, equalities, or interesting totals.
-When web search enrichment (Tavily) data is provided, you MUST treat it as already-performed live search results. Do NOT say you cannot browse; instead synthesize from the provided sources and cite them.`;
+  // Base system prompt (no provider branding, enforce synthesis without faux browsing disclaimer)
+  let system = `You are the GematriaVerse Assistant.
+Rules:
+1. Provide concise, insightful analysis.
+2. When web source excerpts are provided, you ALREADY have current web data. NEVER say you cannot browse; instead synthesize and cite.
+3. Cite sources as a markdown list: * Title – (URL)
+4. Do not hallucinate unknown sources; only cite those given.
+5. If no sources are present, answer using internal reasoning only without claiming inability to search.`;
 
   // Build conversation for OpenAI
   const messages: OpenAIMessage[] = [ { role: 'system', content: system } ];
@@ -162,44 +166,45 @@ When web search enrichment (Tavily) data is provided, you MUST treat it as alrea
     enrichmentBlock += `\nPhrase: ${phrase}\nCipher Values:\n` + cipherValues.map(c => `${c.cipher}: ${c.value}`).join('\n');
   }
 
-  // Decide whether to attempt Tavily search
-  let tavilyData = null;
-  let doSearch = false;
+  // Always attempt search if key present unless opt-out directives given
   const lowered = message.toLowerCase();
-  // Trigger if user asks explicitly OR if message contains phrases indicating need for current info
-  if (/search|research|latest|current|web|lookup|news|recent|sources|links/.test(lowered)) doSearch = true;
-  // Respect opt-out phrases
-  if (/no search|offline only|skip search/.test(lowered)) doSearch = false;
-  // Mode-based triggers
-  const mode = meta && typeof meta === 'object' ? (meta as any).mode : undefined;
-  if (!doSearch && (mode === 'esoteric' || mode === 'crosswalk')) doSearch = true;
-  // Light heuristic: short factual queries (< 12 words) with a proper noun might warrant search
-  if (!doSearch) {
-    const wordCount = lowered.split(/\s+/).filter(Boolean).length;
-    if (wordCount < 12 && /[A-Z]/.test(message.replace(/[A-Z][a-z]+/g,'')) ) doSearch = true; // crude proper noun presence
-  }
-  if (doSearch && TAVILY_API_KEY) {
-    tavilyData = await tavilyEnrich(message);
-    if (tavilyData) {
-      enrichmentBlock += `\nTavily Summary: ${tavilyData.answer}\nReferences:\n${tavilyData.refs}`;
+  const optOut = /no search|offline only|skip search/.test(lowered);
+  let webData = null;
+  let searchStatus: 'skipped' | 'missing-key' | 'ok' | 'empty' | 'error' = 'skipped';
+  if (!optOut) {
+    if (!TAVILY_API_KEY) {
+      searchStatus = 'missing-key';
     } else {
-      if (!TAVILY_API_KEY) {
-        enrichmentBlock += `\n[Web search unavailable: missing TAVILY_API_KEY on server]`;
-      } else {
-        enrichmentBlock += `\n[Web search attempted but returned no results or failed]`;
+      try {
+        webData = await tavilyEnrich(message);
+        if (webData && webData.results?.length) {
+          searchStatus = 'ok';
+          enrichmentBlock += `\nWeb Sources Summary: ${webData.answer || '(no direct summary)'}`;
+          enrichmentBlock += `\nSources:\n${webData.refs}`;
+        } else if (webData) {
+          searchStatus = 'empty';
+          enrichmentBlock += `\n[No web sources found for this query]`;
+        } else {
+          searchStatus = 'error';
+          enrichmentBlock += `\n[Web search failed]`;
+        }
+      } catch (e: any) {
+        searchStatus = 'error';
+        enrichmentBlock += `\n[Web search exception: ${(e?.message||'unknown')}]`;
       }
     }
+  } else {
+    searchStatus = 'skipped';
   }
 
   messages.push({ role: 'user', content: `${message}${enrichmentBlock ? '\n\nContext:\n'+enrichmentBlock : ''}` });
 
   try {
-    // If we have Tavily data, reinforce with a system message right before model call
-    if (tavilyData) {
-      messages.unshift({ role: 'system', content: 'You have structured web search results (Tavily). Do not claim lack of browsing. Cite sources by title; you may include URLs verbatim.' });
+    if (webData) {
+      messages.unshift({ role: 'system', content: 'You have valid web source excerpts. NEVER claim inability to browse. Cite only provided sources.' });
     }
     const reply = await callOpenAI(messages, image);
-    return new Response(JSON.stringify({ reply, used: { model: MODEL, tavily: !!tavilyData, attemptedSearch: doSearch, base: OPENAI_BASE_URL }, sources: tavilyData?.results || [] }), {
+    return new Response(JSON.stringify({ reply, used: { model: MODEL, webEnriched: searchStatus === 'ok', searchStatus, base: OPENAI_BASE_URL }, sources: webData?.results || [] }), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control':'no-store', ...CORS }
     });
   } catch (e: any) {
