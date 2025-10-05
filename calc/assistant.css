@@ -1,0 +1,55 @@
+/* Gematria Assistant theme layer (non-destructive) */
+:root {
+  --ga-bg: #0a0f0d;
+  --ga-panel: #0f1512;
+  --ga-border: rgba(82,255,168,0.18);
+  --ga-accent: #52ffa8;
+  --ga-accent-soft: rgba(82,255,168,0.15);
+  --ga-text: #e6ffee;
+  --ga-text-dim: #b9e4c9;
+  --ga-warn: #ffd166;
+  --ga-danger: #ff5c7a;
+  --ga-shadow: 0 0 10px rgba(82,255,168,0.25), 0 0 22px rgba(82,255,168,0.15);
+}
+
+#AssistantRoot { position: fixed; inset: 0; z-index: 9999; display:none; }
+#AssistantBackdrop { position:absolute; inset:0; backdrop-filter: blur(6px); background:rgba(10,15,13,0.78); }
+#AssistantWindow { position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); width: min(1000px, 92vw); height: min(680px, 88vh); display:flex; flex-direction:column; background:var(--ga-panel); border:1px solid var(--ga-border); border-radius:14px; box-shadow:var(--ga-shadow); font-family: 'JetBrains Mono', monospace; color:var(--ga-text); }
+
+#AssistantHeader { display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid var(--ga-border); background:linear-gradient(90deg,var(--ga-panel),#13201a); }
+#AssistantHeader h2 { margin:0; font-size:15px; letter-spacing:2px; color:var(--ga-accent); }
+.ast-btn { background:var(--ga-accent-soft); color:var(--ga-text); border:1px solid var(--ga-border); padding:4px 10px; font-size:12px; border-radius:7px; cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+.ast-btn:hover { background:var(--ga-accent); color:#062e1c; }
+.ast-btn.danger { background:rgba(255,92,122,0.15); border-color:rgba(255,92,122,0.4); }
+.ast-btn.danger:hover { background:var(--ga-danger); color:#360612; }
+
+#AssistantBody { flex:1; display:grid; grid-template-columns: 300px 1fr; gap:0; overflow:hidden; }
+#AssistantSide { border-right:1px solid var(--ga-border); display:flex; flex-direction:column; }
+#AssistantMain { display:flex; flex-direction:column; }
+
+.assistant-section-title { font-size:11px; text-transform:uppercase; letter-spacing:1px; opacity:0.7; margin:10px 0 4px 0; padding:0 12px; }
+
+#CipherSnapshot { flex:1; overflow:auto; padding:4px 8px 12px 12px; font-size:12px; line-height:1.4; }
+#CipherSnapshot table { width:100%; border-collapse:collapse; }
+#CipherSnapshot th { text-align:left; font-weight:600; color:var(--ga-accent); font-size:11px; padding:2px 4px; border-bottom:1px solid var(--ga-border); }
+#CipherSnapshot td { padding:2px 4px; border-bottom:1px solid rgba(255,255,255,0.04); }
+
+#ChatStream { flex:1; overflow:auto; padding:14px 18px 10px 18px; font-size:13px; line-height:1.45; }
+.chat-msg { margin-bottom:14px; animation: fadeIn 0.25s ease; }
+.chat-role { font-size:10px; font-weight:600; letter-spacing:1px; opacity:0.6; margin-bottom:3px; }
+.chat-bubble { background: #101c17; border:1px solid var(--ga-border); padding:10px 12px; border-radius:10px; white-space:pre-wrap; word-break:break-word; }
+.chat-msg.assistant .chat-bubble { background:#0e241a; border-color:rgba(82,255,168,0.35); }
+.chat-msg.error .chat-bubble { background:#2f0e17; border-color:var(--ga-danger); color:var(--ga-danger); }
+@keyframes fadeIn { from { opacity:0; transform: translateY(4px);} to { opacity:1; transform:translateY(0);} }
+
+#AssistantComposer { border-top:1px solid var(--ga-border); padding:10px 14px; background:#0b1613; display:flex; flex-direction:column; gap:8px; }
+#AssistantComposer textarea { resize:none; width:100%; height:78px; padding:10px 12px; font-family:inherit; font-size:13px; background:#0d1916; color:var(--ga-text); border:1px solid var(--ga-border); border-radius:8px; outline:none; box-shadow:inset 0 0 0 1px rgba(82,255,168,0.05); }
+#AssistantComposer textarea:focus { border-color:var(--ga-accent); box-shadow:0 0 0 1px var(--ga-accent); }
+
+.assistant-actions { display:flex; align-items:center; gap:8px; }
+.assistant-inline-note { font-size:11px; opacity:0.55; }
+
+.pulse-dot { width:8px; height:8px; background:var(--ga-accent); border-radius:50%; box-shadow:0 0 8px var(--ga-accent); animation:pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 0%,100% { transform:scale(.75); opacity:.4;} 50% { transform:scale(1); opacity:1;} }
+
+@media (max-width: 950px) { #AssistantBody { grid-template-columns: 1fr; } #AssistantSide { display:none; } }

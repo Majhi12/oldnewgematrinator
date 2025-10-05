@@ -1,3 +1,15 @@
+# GematriaVerse – Neo Matrix Gematria Calculator
+### Based on (and adapted from) [Gematrinator.com](https://www.gematrinator.com/calculator/index.php) – original engine by Derek Tikkuri. Rebranded and extended as "GematriaVerse" with a neon matrix-inspired UI, Supabase persistence, and an embedded AI Assistant.
+### Core Features
+### Additional Functionality
+### Ciphers
+### Miscellaneous / Enhancements
+New (GematriaVerse) additions:
+- Supabase-backed phrase history persistence (optional, client-side anon)
+- Gematria Assistant overlay (Edge Function + OpenAI) with context injection
+- Branding layer (CSS variables for theming) – enable by adding class `brand-gemaverse` to `<body>`
+- Status indicator for remote sync
+### More Custom Ciphers
 # Gematria Calculator
 
 ### Based on [Gematrinator.com](https://www.gematrinator.com/calculator/index.php) (original calculator by Derek Tikkuri)

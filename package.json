@@ -1,0 +1,8 @@
+{
+  "name": "gematriaverse",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GematriaVerse static calculator + assistant",
+  "license": "MIT",
+  "scripts": { "start": "node server.js" }
+}
