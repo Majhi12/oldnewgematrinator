@@ -41,11 +41,9 @@ function Populate_MenuBar() {
 	hStr = '<div class="gv-menu-bar">'
 	hStr += '<a class="gv-menu-item" href="javascript:Open_Ciphers()">Ciphers</a>'
 	hStr += '<a class="gv-menu-item" href="javascript:Open_Options()">Options</a>'
-	hStr += '<a class="gv-menu-item" href="https://github.com/Alektryon/oldnewgematrinator" target="_blank">GitHub</a>'
+	// Removed GitHub + duplicates of Theme/Rain/Assistant (header has quick links).
 	hStr += '<a class="gv-menu-item" href="datecalc/DateCalculator.html" target="_blank">Date Calc</a>'
 	hStr += '<a class="gv-menu-item accent" href="javascript:toggleAssistant(true)">Assistant</a>'
-	hStr += '<a class="gv-menu-item" href="javascript:ToggleBrand()">Theme</a>'
-	hStr += '<a class="gv-menu-item" href="javascript:ToggleMatrixRain()">Rain</a>'
 	hStr += '</div>'
 	mSpot.innerHTML = hStr
 }

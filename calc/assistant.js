@@ -40,6 +40,9 @@ function ensureAssistantMounted() {
           <div id="AssistantModes"></div>
           <div class="assistant-section-title">Current Ciphers</div>
           <div id="CipherSnapshot"></div>
+          <div class="assistant-section-title">Image (optional)</div>
+          <input type="file" id="AssistantImage" accept="image/*" style="width:100%;font-size:11px;" />
+          <div class="assistant-inline-note" style="margin-top:4px;">Attach for Glyph / Vision decoding.</div>
         </div>
         <div id="AssistantMain">
           <div id="ChatStream"></div>
@@ -145,7 +148,7 @@ async function sendAssistantPrompt(){
   document.getElementById('AssistantSendBtn').style.display='none';
   document.getElementById('AssistantStopBtn').style.display='inline-flex';
   try {
-    const payload = buildAssistantPayload(value);
+    const payload = await buildAssistantPayloadAsync(value);
     const client = (window.supabaseClient || (window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null));
     if (!client) throw new Error('Supabase client not ready');
     const { data, error } = await client.functions.invoke(SUPABASE_FUNCTION_NAME, { body: payload });
@@ -170,21 +173,36 @@ function stopAssistantStream(){
   setAssistantStatus('Stopped', true);
 }
 
-function buildAssistantPayload(userMessage){
+async function buildAssistantPayloadAsync(userMessage){
   // Provide the assistant with some structured context (current open ciphers & example totals for the input phrase if present)
   const phrase = typeof sVal === 'function' ? sVal() : '';
   let cipherValues = [];
+  let imageB64 = null;
   try {
     if (phrase && typeof ciphersOn !== 'undefined') {
       cipherValues = ciphersOn.map(c => ({ cipher: c.Nickname, value: c.Gematria ? c.Gematria(phrase,1) : null }));
     }
+    const fileInput = document.getElementById('AssistantImage');
+    if (fileInput && fileInput.files && fileInput.files[0]) {
+      const f = fileInput.files[0];
+      if (f.size < 2 * 1024 * 1024) {
+        imageB64 = await new Promise(resolve => {
+          const rdr = new FileReader();
+            rdr.onload = () => resolve(String(rdr.result).split(',')[1]);
+            rdr.onerror = () => resolve(null);
+            rdr.readAsDataURL(f);
+        });
+      }
+    }
   } catch {}
+  // Because FileReader is async, we can't block here; a quick workaround is to store a pending promise then update payload later.
   return {
     message: userMessage,
     phrase,
     cipherValues,
     history: assistantMessages.slice(-10),
-    meta: { app: 'oldnewgematrinator', version: 'assistant-embed-v1', mode: activeMode }
+    meta: { app: 'oldnewgematrinator', version: 'assistant-embed-v1', mode: activeMode, imageAttached: !!imageB64 },
+    image: imageB64
   };
 }
 
