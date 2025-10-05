@@ -161,20 +161,28 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
   let tavilyData = null;
   let doSearch = false;
   const lowered = message.toLowerCase();
-  if (/search|research|latest|current|web|lookup|news/.test(lowered)) doSearch = true;
+  // Trigger if user asks explicitly OR if message contains phrases indicating need for current info
+  if (/search|research|latest|current|web|lookup|news|recent|sources|links/.test(lowered)) doSearch = true;
   // Respect opt-out phrases
   if (/no search|offline only|skip search/.test(lowered)) doSearch = false;
   // Mode-based triggers
   const mode = meta && typeof meta === 'object' ? (meta as any).mode : undefined;
-  const forceSearch = meta && typeof meta === 'object' ? (meta as any).forceSearch === true : false;
   if (!doSearch && (mode === 'esoteric' || mode === 'crosswalk')) doSearch = true;
-  if (forceSearch) doSearch = true;
+  // Light heuristic: short factual queries (< 12 words) with a proper noun might warrant search
+  if (!doSearch) {
+    const wordCount = lowered.split(/\s+/).filter(Boolean).length;
+    if (wordCount < 12 && /[A-Z]/.test(message.replace(/[A-Z][a-z]+/g,'')) ) doSearch = true; // crude proper noun presence
+  }
   if (doSearch && TAVILY_API_KEY) {
     tavilyData = await tavilyEnrich(message);
     if (tavilyData) {
       enrichmentBlock += `\nTavily Summary: ${tavilyData.answer}\nReferences:\n${tavilyData.refs}`;
     } else {
-      enrichmentBlock += `\n[Tavily search attempted but returned no results]`;
+      if (!TAVILY_API_KEY) {
+        enrichmentBlock += `\n[Web search unavailable: missing TAVILY_API_KEY on server]`;
+      } else {
+        enrichmentBlock += `\n[Web search attempted but returned no results or failed]`;
+      }
     }
   }
 
