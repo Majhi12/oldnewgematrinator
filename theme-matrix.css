@@ -31,9 +31,10 @@ html,body{
 @media (max-width:640px){ #gv-logo{ height:64px; } }
 
 /* New pure-logo header */
-.gv-header{max-width:1200px;margin:0 auto;padding:26px 10px 8px;display:flex;justify-content:center;align-items:center;}
-.gv-logo-only{display:flex;align-items:center;justify-content:center;}
-.gv-logo{display:block;height:120px;width:auto;filter:drop-shadow(0 0 12px rgba(82,255,168,.4));}
+.gv-header{max-width:1400px;margin:0 auto;padding:30px 10px 12px;display:flex;justify-content:center;align-items:center;}
+.gv-logo-only{display:flex;align-items:center;justify-content:center;width:100%;}
+.gv-logo{display:block;height:140px;width:auto;filter:drop-shadow(0 0 14px rgba(82,255,168,.45));background:transparent !important;}
+body.dark .gv-logo{background:transparent !important;}
 @media (max-width:900px){ .gv-logo{height:100px;} }
 @media (max-width:640px){ .gv-logo{height:78px;} }
 @media (max-width:760px){

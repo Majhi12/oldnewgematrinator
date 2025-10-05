@@ -156,6 +156,10 @@ async function sendAssistantPrompt(){
       console.error('[Assistant] Edge function error', error);
       throw error;
     }
+    if (data && data.error){
+      console.error('[Assistant] Function responded with error field:', data.error);
+      throw new Error(data.error);
+    }
     const reply = (data && (data.reply || data.answer || data.content)) ? (data.reply || data.answer || data.content) : JSON.stringify(data);
     pushAssistantMessage('assistant', reply);
     setAssistantStatus('Ready');

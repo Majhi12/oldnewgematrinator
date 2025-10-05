@@ -39,9 +39,8 @@ async function callOpenAI(messages: { role: string; content: string }[], imageB6
     },
     body: JSON.stringify({
       model: MODEL_NAME,
-      messages: imageB64 ? messages.map(m => m) : messages,
-      temperature: 0.4,
-      ...(imageB64 ? { vision: [{ type: 'input_image', image_base64: imageB64 }] } : {})
+      messages,
+      temperature: 0.4
     })
   });
   if (!resp.ok) {
