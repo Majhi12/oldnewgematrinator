@@ -152,13 +152,18 @@ async function sendAssistantPrompt(){
     const client = (window.supabaseClient || (window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null));
     if (!client) throw new Error('Supabase client not ready');
     const { data, error } = await client.functions.invoke(SUPABASE_FUNCTION_NAME, { body: payload });
-    if (error) throw error;
+    if (error) {
+      console.error('[Assistant] Edge function error', error);
+      throw error;
+    }
     const reply = (data && (data.reply || data.answer || data.content)) ? (data.reply || data.answer || data.content) : JSON.stringify(data);
     pushAssistantMessage('assistant', reply);
     setAssistantStatus('Ready');
   } catch (e){
     console.warn(e);
     pushAssistantMessage('error', 'Error: '+ (e.message || e));
+    alert('Assistant request failed. Check console for details.');
+    console.info('[Assistant] Ensure in Supabase project secrets: OPENAI_API_KEY (and TAVILY_API_KEY if web enrichment needed). After updating secrets, redeploy function: supabase functions deploy gematria-assistant --no-verify-jwt');
     setAssistantStatus('Error', true);
   } finally {
     assistantStreaming = false;
