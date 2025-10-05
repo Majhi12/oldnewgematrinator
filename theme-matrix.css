@@ -1,0 +1,100 @@
+/* GematriaVerse – Dark Matrix Theme (drop-in, no DOM changes needed) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=JetBrains+Mono:wght@400;600&display=swap');
+
+:root{
+  --bg:#0a0f0d;          /* near-black with a hint of green */
+  --panel:#0f1512;       /* panel surface */
+  --text:#e6ffee;        /* parchment-green */
+  --text-dim:#b9e4c9;
+  --accent:#52ffa8;      /* matrix neon */
+  --accent-2:#2ee6a6;
+  --border:rgba(82,255,168,.22);
+  --grid:rgba(82,255,168,.06);
+  --shadow-neon:0 0 10px rgba(82,255,168,.35),0 0 22px rgba(82,255,168,.18);
+}
+
+html,body{
+  height:100%;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+
+/* center the legacy <center> content but keep width fluid */
+body > center{
+  display:block;
+  max-width:1100px;
+  margin:28px auto;
+  padding:8px 16px 40px;
+}
+
+/* headings */
+h1,h2,h3 { color:var(--accent); letter-spacing:.06em; }
+h1 { text-shadow:var(--shadow-neon); }
+
+/* links */
+a{ color:var(--accent); text-decoration:none; }
+a:hover{ color:#9effc8; text-shadow:var(--shadow-neon); }
+
+/* inputs */
+input[type="text"], textarea{
+  background:var(--panel);
+  color:var(--text);
+  border:1px solid var(--border);
+  outline:none;
+  padding:.55rem .7rem;
+  border-radius:8px;
+  width:100%;
+  box-shadow:none;
+}
+input[type="text"]::placeholder{ color:var(--text-dim); }
+
+/* buttons (those “Move Up/Down”, print buttons, etc.) */
+button, input[type="button"], input[type="submit"]{
+  background:linear-gradient(180deg, rgba(82,255,168,.10), rgba(82,255,168,.03));
+  color:var(--text);
+  border:1px solid var(--border);
+  padding:.38rem .6rem;
+  border-radius:8px;
+  cursor:pointer;
+}
+button:hover, input[type="button"]:hover, input[type="submit"]:hover{
+  border-color:var(--accent);
+  color:var(--accent);
+  box-shadow:var(--shadow-neon);
+}
+
+/* result numbers (the four zeros etc.) */
+.bigGemVal, .numTT, .Green { color:var(--accent) !important; text-shadow:var(--shadow-neon); }
+.Blue, .blue { color:#8bd7ff !important; }
+.Red { color:#ff6b7a !important; }
+
+/* tables (letter maps, cipher tables) */
+table{
+  border-collapse:collapse;
+  background:var(--panel);
+  border:1px solid var(--border);
+  border-radius:10px;
+  overflow:hidden;
+}
+td,th{ border-bottom:1px solid rgba(255,255,255,.06); padding:.45rem .6rem; }
+tr:nth-child(even){ background-color:rgba(82,255,168,.04); }
+
+/* subtle grid background for large empty areas */
+.matrix-grid{
+  background-image:
+    linear-gradient(to right, var(--grid) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--grid) 1px, transparent 1px);
+  background-size:32px 32px;
+  border-radius:12px;
+}
+
+/* thin scrollbars */
+*{ scrollbar-width:thin; scrollbar-color:var(--accent) var(--bg); }
+*::-webkit-scrollbar{ width:8px; height:8px; }
+*::-webkit-scrollbar-thumb{ background:rgba(82,255,168,.18); border-radius:8px; }
+*::-webkit-scrollbar-thumb:hover{ background:rgba(82,255,168,.3); }
+*::-webkit-scrollbar-track{ background:var(--bg); }
+
+/* tiny utilities to tone down random small text the original uses */
+.small, .tiny, .note { color:var(--text-dim) !important; }

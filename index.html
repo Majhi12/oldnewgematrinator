@@ -9,24 +9,30 @@
 
   gtag('config', 'G-SD1C75PP8N');
 </script>
-<Title>Old New Gematrinator</Title>
+<title>GematriaVerse — Gematria Calculator</title>
+<link rel="icon" type="image/svg+xml" href="favicon.svg" />
 
 <script src="lib/jquery.min.js"></script>
 <script src="lib/html2canvas.min.js"></script>
+<!-- Supabase client library -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 
 <script src="calc/gematriaNGG.js"></script>
 <script src="calc/ijavaNGG.js"></script>
 <script src="calc/highlighter.js"></script>
 <script src="calc/hltboxpanel.js"></script>
 <script src="calc/history.js"></script>
+<script src="calc/supabase.js"></script>
+<link rel="stylesheet" href="calc/assistant.css" />
+<script src="calc/assistant.js"></script>
+<script src="calc/brand.js"></script>
+
+<link rel="stylesheet" type="text/css" href="calc/styles.css">
+<link rel="stylesheet" href="theme-matrix.css">
 
 </head>
 
-
-
-<link rel="stylesheet" type="text/css" href="calc/styles.css">
-
-<body onload="Page_Launch()">
+<body class="brand-gemaverse" onload="Page_Launch(); InitBrandPreference()">
 <canvas id="canv"></canvas>
 
 <div id="overlay"></div>
@@ -34,9 +40,19 @@
 
 <!-- screenshot, html2canvas -->
 <center><div id="screenshotToolbar"></div></center><p>
+<center>
+<div id="supabaseToolbar" style="margin-bottom:10px; font-family: sans-serif; font-size: 13px;">
+	<button onclick="loadHistoryFromSupabase()">Load Remote History</button>
+	<button onclick="queueSupabaseSync()">Sync Now</button>
+	<button onclick="clearRemoteHistory()">Clear Remote</button>
+	<span style="opacity:0.5; margin-left:8px;">Supabase:</span>
+	<span id="supabaseStatus" style="opacity:0.85; font-weight:600;">Idle</span>
+</div>
+</center>
 	
 <center>
-	
+<center>
+<div style="margin-top:6px; font-family: 'JetBrains Mono', monospace; letter-spacing:2px; font-size:20px; color:#52ffa8; text-shadow:0 0 8px rgba(82,255,168,0.4);">GEMATRIAVERSE</div>
 <div id="MenuSpot"></div><br>
 
 <div id="MainTable"><table><tr>
@@ -62,9 +78,37 @@
 	<div id="MiscSpot"></div>
 	
 </center>
+
+<!-- Optional ambient matrix rain background -->
+<script>
+(function(){
+	const cvs = document.createElement('canvas');
+	Object.assign(cvs.style,{ position:'fixed', inset:'0', zIndex:'-1' });
+	document.body.appendChild(cvs);
+	const ctx = cvs.getContext('2d');
+	let w,h,cols,ys;
+	function resize(){
+		w=cvs.width=window.innerWidth; h=cvs.height=window.innerHeight;
+		cols=Math.floor(w/14); ys=Array(cols).fill(0);
+	}
+	window.addEventListener('resize',resize); resize();
+	function frame(){
+		ctx.fillStyle='rgba(10,15,13,0.25)';
+		ctx.fillRect(0,0,w,h);
+		ctx.fillStyle='#52ffa8';
+		ctx.font='14px JetBrains Mono';
+		ys.forEach((y,i)=>{
+			const t=String.fromCharCode(0x30A0+Math.random()*96);
+			ctx.fillText(t,i*14,y);
+			ys[i]= y>h+Math.random()*1000 ? 0 : y+18;
+		});
+		requestAnimationFrame(frame);
+	}
+	frame();
+})();
+</script>
+
 </body>
-
-
 
 <!-- add after page elements are created -->
 <script src="calc/coderain.js"></script>
