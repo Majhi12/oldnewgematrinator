@@ -25,6 +25,11 @@
 
 #AssistantBody { flex:1; display:grid; grid-template-columns: 300px 1fr; gap:0; overflow:hidden; }
 #AssistantSide { border-right:1px solid var(--ga-border); display:flex; flex-direction:column; }
+#AssistantModes { display:flex; flex-direction:column; gap:4px; padding:6px 10px 10px 10px; overflow:auto; }
+.mode-btn { font-size:11px; letter-spacing:0.5px; cursor:pointer; padding:6px 8px; border:1px solid rgba(82,255,168,0.15); border-radius:6px; background:#0d1916; transition:background .15s,border-color .15s; }
+.mode-btn:hover { border-color:var(--ga-accent); }
+.mode-btn.active { background:linear-gradient(90deg,#123424,#0d1916); border-color:var(--ga-accent); color:var(--ga-accent); box-shadow:0 0 6px rgba(82,255,168,0.35); }
+#AssistantHint { margin-top:4px; font-size:10px; opacity:0.55; }
 #AssistantMain { display:flex; flex-direction:column; }
 
 .assistant-section-title { font-size:11px; text-transform:uppercase; letter-spacing:1px; opacity:0.7; margin:10px 0 4px 0; padding:0 12px; }

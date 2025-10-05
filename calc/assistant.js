@@ -1,10 +1,24 @@
-/* Gematria Assistant: lightweight chat invoking Supabase Edge Function (OpenAI on backend) */
+/* Gematria Assistant: enriched mode-based research UI */
 // Adjust if your Edge Function name differs
 const SUPABASE_FUNCTION_NAME = 'gematria-assistant';
 
 let assistantOpen = false;
 let assistantStreaming = false;
 let assistantMessages = []; // {role:'user'|'assistant'|'error', content:string}
+
+// Mode palette (synced with docs/assistant-architecture.md)
+const ASSISTANT_MODES = [
+  { id:'resonance', label:'Symbolic Resonance', template:'Map symbolic resonance for: {{text}}. 1) Compute gematria with {{ciphers}}; 2) Surface patterns; 3) Working theories (label).' },
+  { id:'etymology', label:'Etymology & Roots', template:'Provide etymology, morphology and cognates for: {{term}}.' },
+  { id:'anagram', label:'Anagram Lab', template:'Find dictionary-true anagrams for: {{text}}. Rank by frequency. Compute gematria for top 10.' },
+  { id:'acronym', label:'Acronym Forge', template:'Generate candidate acronyms/backronyms for: {{phrase}} and compute gematria.' },
+  { id:'numerology', label:'Numerology Suite', template:'Compute reduced/full sums, digital roots, factors, prime/triangular/square/Fibonacci relationships for: {{text}}.' },
+  { id:'synch', label:'Timeline Synchronicity', template:'Between {{from}} and {{to}} compute deltas, factorization, notable numeric classifications.' },
+  { id:'glyph', label:'Image/Glyph Decode', template:'Analyze uploaded image: OCR text, symbol classes, gematria for transcribed text.' },
+  { id:'crosswalk', label:'Myth–Bible–Science', template:'Cross-reference {{term}} across mythic motifs, biblical references, and scientific terminology.' },
+  { id:'esoteric', label:'Esoteric Research', template:'Deep-dive on {{topic}} using search + RAG; concise synthesis with linked sources.' }
+];
+let activeMode = 'resonance';
 
 function ensureAssistantMounted() {
   if (document.getElementById('AssistantRoot')) return;
@@ -22,13 +36,15 @@ function ensureAssistantMounted() {
       </div>
       <div id="AssistantBody">
         <div id="AssistantSide">
+          <div class="assistant-section-title">Modes</div>
+          <div id="AssistantModes"></div>
           <div class="assistant-section-title">Current Ciphers</div>
           <div id="CipherSnapshot"></div>
         </div>
         <div id="AssistantMain">
           <div id="ChatStream"></div>
           <div id="AssistantComposer">
-            <textarea id="AssistantInput" placeholder="Ask about a phrase, relationships between cipher totals, or request comparisons... (Shift+Enter = newline)" onkeydown="assistantKeyHandler(event)"></textarea>
+            <textarea id="AssistantInput" placeholder="Type a query (Shift+Enter = newline)" onkeydown="assistantKeyHandler(event)"></textarea>
             <div class="assistant-actions">
               <button id="AssistantSendBtn" class="ast-btn" onclick="sendAssistantPrompt()">Send</button>
               <button id="AssistantStopBtn" class="ast-btn danger" style="display:none;" onclick="stopAssistantStream()">Stop</button>
@@ -36,14 +52,28 @@ function ensureAssistantMounted() {
               <div style="flex:1"></div>
               <button class="ast-btn" onclick="clearAssistantChat()">Clear Chat</button>
             </div>
+            <div class="assistant-inline-note" id="AssistantHint"></div>
           </div>
         </div>
       </div>
     </div>`;
   document.body.appendChild(root);
+  renderModes();
   refreshAssistantSnapshot();
   renderAssistantMessages();
 }
+
+function renderModes(){
+  const spot = document.getElementById('AssistantModes');
+  if(!spot) return;
+  spot.innerHTML = ASSISTANT_MODES.map(m=>`<div class="mode-btn ${m.id===activeMode?'active':''}" onclick="setAssistantMode('${m.id}')">${m.label}</div>`).join('');
+  const active = ASSISTANT_MODES.find(m=>m.id===activeMode);
+  if(active) {
+    const hint = document.getElementById('AssistantHint');
+    if(hint) hint.textContent = active.template.replace(/\{\{.*?\}\}/g,'…');
+  }
+}
+function setAssistantMode(id){ activeMode = id; renderModes(); }
 
 function toggleAssistant(force) {
   ensureAssistantMounted();
@@ -88,7 +118,7 @@ function escapeHtml(str){
 }
 
 function pushAssistantMessage(role, content){
-  assistantMessages.push({ role, content });
+  assistantMessages.push({ role, content: sanitizeOutput(content) });
   renderAssistantMessages();
 }
 
@@ -154,9 +184,19 @@ function buildAssistantPayload(userMessage){
     phrase,
     cipherValues,
     history: assistantMessages.slice(-10),
-    meta: { app: 'oldnewgematrinator', version: 'assistant-embed-v1' }
+    meta: { app: 'oldnewgematrinator', version: 'assistant-embed-v1', mode: activeMode }
   };
 }
+
+// Basic sanitizer (enforce markdown links, strip raw long URLs)
+function sanitizeOutput(txt){
+  if(!txt) return txt;
+  // Replace bare http(s) URLs with angle form to be post-processed
+  return txt.replace(/https?:\/\/\S+/g, u=>`<${u}>`);
+}
+
+// Expose mode functions
+window.setAssistantMode = setAssistantMode;
 
 // Expose toggle to menu
 window.toggleAssistant = toggleAssistant;
