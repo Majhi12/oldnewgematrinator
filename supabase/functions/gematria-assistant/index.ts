@@ -104,8 +104,13 @@ async function tavilyEnrich(query: string) {
       return null;
     }
     const answer = j.answer || '';
-    const refs = (j.results || []).map((res: any) => `- ${res.title}: ${res.url}`).join('\n');
-    return { answer, refs };
+    const results = (j.results || []).map((res: any) => ({
+      title: res.title,
+      url: res.url,
+      snippet: res.content || res.snippet || ''
+    }));
+  const refs = results.map((r: { title: string; url: string }) => `- ${r.title}: ${r.url}`).join('\n');
+    return { answer, refs, results };
   } catch (e) {
     console.error('[assistant][tavily] exception', e && (e as any).message ? (e as any).message : e);
     return null;
@@ -137,10 +142,10 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
   }
 
-  // Prepare system prompt
+  // Base system prompt
   let system = `You are the GematriaVerse Assistant. Provide insightful but concise analysis of gematria values.
 If cipherValues are supplied, reference notable patterns, equalities, or interesting totals.
-If user asks for research or current info, optionally integrate Tavily enrichment snippet if available.`;
+When web search enrichment (Tavily) data is provided, you MUST treat it as already-performed live search results. Do NOT say you cannot browse; instead synthesize from the provided sources and cite them.`;
 
   // Build conversation for OpenAI
   const messages: OpenAIMessage[] = [ { role: 'system', content: system } ];
@@ -189,8 +194,12 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
   messages.push({ role: 'user', content: `${message}${enrichmentBlock ? '\n\nContext:\n'+enrichmentBlock : ''}` });
 
   try {
+    // If we have Tavily data, reinforce with a system message right before model call
+    if (tavilyData) {
+      messages.unshift({ role: 'system', content: 'You have structured web search results (Tavily). Do not claim lack of browsing. Cite sources by title; you may include URLs verbatim.' });
+    }
     const reply = await callOpenAI(messages, image);
-    return new Response(JSON.stringify({ reply, used: { model: MODEL, tavily: !!tavilyData, attemptedSearch: doSearch, base: OPENAI_BASE_URL } }), {
+    return new Response(JSON.stringify({ reply, used: { model: MODEL, tavily: !!tavilyData, attemptedSearch: doSearch, base: OPENAI_BASE_URL }, sources: tavilyData?.results || [] }), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control':'no-store', ...CORS }
     });
   } catch (e: any) {
