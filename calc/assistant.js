@@ -56,6 +56,9 @@ function ensureAssistantMounted() {
               <button class="ast-btn" onclick="clearAssistantChat()">Clear Chat</button>
             </div>
             <div class="assistant-inline-note" id="AssistantHint"></div>
+             <label style="font-size:11px; display:flex; align-items:center; gap:4px; margin-top:2px; opacity:0.8;">
+               <input type="checkbox" id="AssistantForceSearch" /> Force Web Search (Tavily)
+             </label>
           </div>
         </div>
       </div>
@@ -194,6 +197,7 @@ async function buildAssistantPayloadAsync(userMessage){
   const phrase = typeof sVal === 'function' ? sVal() : '';
   let cipherValues = [];
   let imageB64 = null;
+  const forceSearch = !!document.getElementById('AssistantForceSearch')?.checked;
   try {
     if (phrase && typeof ciphersOn !== 'undefined') {
       cipherValues = ciphersOn.map(c => ({ cipher: c.Nickname, value: c.Gematria ? c.Gematria(phrase,1) : null }));
@@ -217,7 +221,7 @@ async function buildAssistantPayloadAsync(userMessage){
     phrase,
     cipherValues,
     history: assistantMessages.slice(-10),
-    meta: { app: 'oldnewgematrinator', version: 'assistant-embed-v1', mode: activeMode, imageAttached: !!imageB64 },
+     meta: { app: 'oldnewgematrinator', version: 'assistant-embed-v1', mode: activeMode, imageAttached: !!imageB64, forceSearch },
     image: imageB64
   };
 }

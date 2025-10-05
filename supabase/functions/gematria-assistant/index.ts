@@ -166,7 +166,9 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
   if (/no search|offline only|skip search/.test(lowered)) doSearch = false;
   // Mode-based triggers
   const mode = meta && typeof meta === 'object' ? (meta as any).mode : undefined;
+  const forceSearch = meta && typeof meta === 'object' ? (meta as any).forceSearch === true : false;
   if (!doSearch && (mode === 'esoteric' || mode === 'crosswalk')) doSearch = true;
+  if (forceSearch) doSearch = true;
   if (doSearch && TAVILY_API_KEY) {
     tavilyData = await tavilyEnrich(message);
     if (tavilyData) {
