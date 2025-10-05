@@ -6,6 +6,22 @@ let assistantOpen = false;
 let assistantStreaming = false;
 let assistantMessages = []; // {role:'user'|'assistant'|'error', content:string}
 let lastSourceUrls = new Set();
+// Library data structure: { [mode]: { notes: Array<{id, text, ts}>, resources: Array<{id, url, title, ts}> } }
+const LIB_STORAGE_KEY = 'gv_assistant_lib_v1';
+let assistantLibrary = loadAssistantLibrary();
+
+function loadAssistantLibrary(){
+  try { const raw = localStorage.getItem(LIB_STORAGE_KEY); if(raw) return JSON.parse(raw); } catch {}
+  return {};
+}
+function persistAssistantLibrary(){
+  try { localStorage.setItem(LIB_STORAGE_KEY, JSON.stringify(assistantLibrary)); } catch {}
+}
+function libEnsureMode(mode){ if(!assistantLibrary[mode]) assistantLibrary[mode] = { notes:[], resources:[] }; return assistantLibrary[mode]; }
+function addNote(mode, text){ const m=libEnsureMode(mode); m.notes.push({ id:crypto.randomUUID(), text:text.trim(), ts:Date.now() }); persistAssistantLibrary(); renderLibrary(); }
+function addResource(mode, url, title){ const m=libEnsureMode(mode); m.resources.push({ id:crypto.randomUUID(), url, title: title || url, ts:Date.now() }); persistAssistantLibrary(); renderLibrary(); }
+function delLibItem(mode, type, id){ const m=libEnsureMode(mode); m[type] = m[type].filter(x=>x.id!==id); persistAssistantLibrary(); renderLibrary(); }
+function clearModeLibrary(mode){ assistantLibrary[mode]={ notes:[], resources:[] }; persistAssistantLibrary(); renderLibrary(); }
 
 // Mode palette (synced with docs/assistant-architecture.md)
 const ASSISTANT_MODES = [
@@ -32,6 +48,7 @@ function ensureAssistantMounted() {
         <h2>GEMATRIA ASSISTANT</h2>
         <div style="display:flex; gap:6px;">
           <button class="ast-btn" onclick="refreshAssistantSnapshot()">Refresh Snapshot</button>
+          <button class="ast-btn" onclick="exportCurrentModeLibrary()">Export Mode</button>
           <button class="ast-btn" onclick="toggleAssistant(false)">Close ✕</button>
         </div>
       </div>
@@ -41,6 +58,8 @@ function ensureAssistantMounted() {
           <div id="AssistantModes"></div>
           <div class="assistant-section-title">Current Ciphers</div>
           <div id="CipherSnapshot"></div>
+          <div class="assistant-section-title">Library</div>
+          <div id="AssistantLibrary"></div>
           <div class="assistant-section-title">Image (optional)</div>
           <input type="file" id="AssistantImage" accept="image/*" style="width:100%;font-size:11px;" />
           <div class="assistant-inline-note" style="margin-top:4px;">Attach for Glyph / Vision decoding.</div>
@@ -65,6 +84,8 @@ function ensureAssistantMounted() {
   renderModes();
   refreshAssistantSnapshot();
   renderAssistantMessages();
+  renderLibrary();
+  setupContextMenu();
 }
 
 function renderModes(){
@@ -117,7 +138,7 @@ function renderAssistantMessages(){
   stream.innerHTML = assistantMessages.map(m => `
     <div class="chat-msg ${m.role}">
       <div class="chat-role">${m.role.toUpperCase()}</div>
-      <div class="chat-bubble">${escapeHtml(m.content)}</div>
+      <div class="chat-bubble">${linkifyHtml(escapeHtml(m.content))}</div>
     </div>`).join('');
   // Auto-scroll to latest unless user has scrolled up (within 60px of bottom considered sticky)
   const atBottom = Math.abs((stream.scrollHeight - stream.clientHeight) - stream.scrollTop) < 60;
@@ -126,6 +147,10 @@ function renderAssistantMessages(){
 
 function escapeHtml(str){
   return str.replace(/[&<>]/g, s=>({ '&':'&amp;','<':'&lt;','>':'&gt;' }[s]));
+}
+
+function linkifyHtml(html){
+  return html.replace(/&lt;(https?:[^\s&gt;]+)&gt;/g, (m,u)=>`<a href="${u}" target="_blank" rel="noopener" data-resource-link="1">${u}</a>`);
 }
 
 function pushAssistantMessage(role, content){
@@ -194,6 +219,8 @@ async function sendAssistantPrompt(){
     }
     pushAssistantMessage('assistant', reply + sourcesBlock);
     setAssistantStatus('Ready');
+    // Re-render to ensure anchors injected become clickable
+    renderAssistantMessages();
   } catch (e){
     console.warn(e);
     pushAssistantMessage('error', 'Error: '+ (e.message || e));
@@ -261,6 +288,80 @@ window.toggleSources = function(el){
   box.style.display = open ? 'none' : 'block';
   el.textContent = el.textContent.replace(/▾|▸/g,'') + (open ? ' ▸' : ' ▾');
 };
+
+// Library rendering
+function renderLibrary(){
+  const spot = document.getElementById('AssistantLibrary');
+  if(!spot) return;
+  const modeData = libEnsureMode(activeMode);
+  const notes = modeData.notes.slice().sort((a,b)=>b.ts-a.ts);
+  const resources = modeData.resources.slice().sort((a,b)=>b.ts-a.ts);
+  let html = '';
+  html += `<div class="lib-section"><h4>Notes <span style="font-weight:400;opacity:.6">${notes.length}</span><span><a style="cursor:pointer;font-size:10px;" onclick="clearModeLibrary('${activeMode}')">clear</a></span></h4>`;
+  if(!notes.length) html += '<div class="lib-empty">No notes yet</div>'; else {
+    html += '<ul class="lib-list">'+notes.map(n=>`<li><span>${escapeHtml(n.text)}</span><span class="lib-del" onclick="delLibItem('${activeMode}','notes','${n.id}')">✕</span></li>`).join('')+'</ul>';
+  }
+  html += '</div>';
+  html += `<div class="lib-section"><h4>Resources <span style="font-weight:400;opacity:.6">${resources.length}</span><span><a style="cursor:pointer;font-size:10px;" onclick="clearModeLibrary('${activeMode}')">clear</a></span></h4>`;
+  if(!resources.length) html += '<div class="lib-empty">No resources yet</div>'; else {
+    html += '<ul class="lib-list">'+resources.map(r=>`<li><a class="lib-url" href="${escapeHtml(r.url)}" target="_blank" rel="noopener">${escapeHtml(r.title||r.url)}</a><span class="lib-del" onclick="delLibItem('${activeMode}','resources','${r.id}')">✕</span></li>`).join('')+'</ul>';
+  }
+  html += '</div>';
+  spot.innerHTML = html;
+}
+
+// Export current mode library (JSON download)
+function exportCurrentModeLibrary(){
+  const data = libEnsureMode(activeMode);
+  const blob = new Blob([JSON.stringify(data,null,2)], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `assistant-${activeMode}-library.json`; a.click();
+  setTimeout(()=> URL.revokeObjectURL(url), 1500);
+}
+
+// Context menu logic
+function setupContextMenu(){
+  if(document.getElementById('AssistantContextMenu')) return;
+  const menu = document.createElement('div');
+  menu.id = 'AssistantContextMenu';
+  menu.innerHTML = `
+    <button onclick="ctxAddNote()">Add Selection to Notes</button>
+    <button onclick="ctxAddResource()">Add Link to Resources</button>`;
+  document.body.appendChild(menu);
+  document.addEventListener('click', ()=> menu.style.display='none');
+  document.addEventListener('contextmenu', e => {
+    if(!document.getElementById('AssistantRoot') || document.getElementById('AssistantRoot').style.display==='none') return;
+    const root = document.getElementById('AssistantRoot');
+    if(!root.contains(e.target)) return; // outside assistant
+    const sel = window.getSelection();
+    let hasText = sel && sel.toString().trim().length>0;
+    let linkTarget = e.target.closest('a');
+    if(!hasText && !linkTarget) return; // allow normal context outside selection/link
+    e.preventDefault();
+    menu.style.display='block';
+    menu.style.left = e.pageX + 'px';
+    menu.style.top = e.pageY + 'px';
+    menu.dataset.link = linkTarget ? linkTarget.href : '';
+  });
+  window.ctxAddNote = function(){
+    const sel = window.getSelection();
+    const txt = sel ? sel.toString().trim() : '';
+    if(txt) addNote(activeMode, txt);
+    document.getElementById('AssistantContextMenu').style.display='none';
+  };
+  window.ctxAddResource = function(){
+    const menu = document.getElementById('AssistantContextMenu');
+    const url = menu.dataset.link;
+    if(url) addResource(activeMode, url, url);
+    menu.style.display='none';
+  };
+}
+
+// Expose needed functions
+window.exportCurrentModeLibrary = exportCurrentModeLibrary;
+window.delLibItem = delLibItem;
+window.clearModeLibrary = clearModeLibrary;
 
 // Expose mode functions
 window.setAssistantMode = setAssistantMode;

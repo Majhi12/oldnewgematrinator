@@ -56,6 +56,23 @@ body.ga-lock { overflow:hidden !important; }
 .assistant-sources li.already { opacity:0.55; }
 .assistant-spinner { width:12px; height:12px; border:2px solid var(--ga-accent-soft); border-top-color:var(--ga-accent); border-radius:50%; animation:spin 0.8s linear infinite; }
 @keyframes spin { to { transform:rotate(360deg);} }
+
+/* Mode Library */
+#AssistantLibrary { padding:6px 10px 12px 10px; overflow:auto; flex:0 0 auto; }
+.lib-section { margin-bottom:10px; }
+.lib-section h4 { margin:6px 0 4px 0; font-size:10px; letter-spacing:1px; font-weight:600; color:var(--ga-accent); display:flex; justify-content:space-between; align-items:center; }
+.lib-list { list-style:none; margin:0; padding:0; max-height:120px; overflow:auto; font-size:11px; }
+.lib-list li { padding:4px 4px; border:1px solid rgba(82,255,168,0.12); border-radius:5px; margin-bottom:4px; position:relative; background:#0d1916; }
+.lib-list li:hover { border-color:var(--ga-accent); }
+.lib-del { position:absolute; top:3px; right:4px; font-size:10px; cursor:pointer; color:var(--ga-danger); }
+.lib-empty { font-size:10px; opacity:0.5; }
+.lib-url { color:var(--ga-accent); text-decoration:none; word-break:break-all; }
+.lib-url:hover { text-decoration:underline; }
+
+/* Context menu for adding notes/resources */
+#AssistantContextMenu { position:fixed; z-index:10000; background:#10221c; border:1px solid var(--ga-border); border-radius:8px; padding:4px 0; min-width:180px; font-size:12px; display:none; box-shadow:0 0 0 1px rgba(82,255,168,0.15),0 6px 24px -4px rgba(0,0,0,0.55); }
+#AssistantContextMenu button { display:block; width:100%; background:none; border:0; text-align:left; padding:6px 12px; color:var(--ga-text); cursor:pointer; font-family:inherit; font-size:12px; }
+#AssistantContextMenu button:hover { background:var(--ga-accent); color:#052a1a; }
 .chat-bubble::-webkit-scrollbar { width:6px; }
 .chat-bubble::-webkit-scrollbar-thumb { background:rgba(82,255,168,0.35); border-radius:6px; }
 .chat-bubble::-webkit-scrollbar-thumb:hover { background:rgba(82,255,168,0.55); }
