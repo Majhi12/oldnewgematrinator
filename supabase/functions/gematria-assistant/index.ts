@@ -21,7 +21,8 @@
 // @ts-ignore
 declare const Deno: any; // harmless for edge runtime, improves local DX
 
-import 'jsr:@supabase/functions@1.4.5/types';
+// Removed failing JSR type import (was: jsr:@supabase/functions@1.4.5/types) because deploy returned 400 JSR package not found.
+// Supabase functions bundle without it; local IDE red squiggles are cosmetic.
 
 interface ChatHistoryItem { role: string; content: string }
 interface Payload {
