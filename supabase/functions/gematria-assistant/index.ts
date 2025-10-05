@@ -103,19 +103,28 @@ async function tavilyEnrich(query: string) {
 }
 
 Deno.serve(async (req: Request) => {
+  const CORS = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS'
+  };
+
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 204, headers: CORS });
+  }
   if (req.method !== 'POST') {
-    return new Response('Method Not Allowed', { status: 405 });
+    return new Response('Method Not Allowed', { status: 405, headers: CORS });
   }
   let payload: Payload | null = null;
   try {
     payload = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
   }
 
   const { message, phrase, cipherValues, history, image, meta } = payload || {};
   if (!message || typeof message !== 'string') {
-    return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400, headers: { 'Content-Type': 'application/json', ...CORS } });
   }
 
   // Prepare system prompt
@@ -152,11 +161,11 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
   try {
     const reply = await callOpenAI(messages, image);
     return new Response(JSON.stringify({ reply, used: { model: MODEL, tavily: !!tavilyData, base: OPENAI_BASE_URL } }), {
-      headers: { 'Content-Type': 'application/json', 'Cache-Control':'no-store' }
+      headers: { 'Content-Type': 'application/json', 'Cache-Control':'no-store', ...CORS }
     });
   } catch (e: any) {
     const errMsg = String(e && e.message ? e.message : e);
     console.error('[assistant] error', errMsg);
-    return new Response(JSON.stringify({ error: errMsg }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ error: errMsg }), { status: 500, headers: { 'Content-Type': 'application/json', ...CORS } });
   }
 });
