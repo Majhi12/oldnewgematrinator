@@ -87,17 +87,27 @@ async function callOpenAI(messages: OpenAIMessage[], imageB64?: string | null) {
 async function tavilyEnrich(query: string) {
   if (!TAVILY_API_KEY) return null;
   try {
+    const body = { api_key: TAVILY_API_KEY, query, search_depth: 'basic', include_answer: true, max_results: 3 };
     const r = await fetch('https://api.tavily.com/search', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': TAVILY_API_KEY },
-      body: JSON.stringify({ query, search_depth: 'basic', include_answer: true, max_results: 3 })
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': TAVILY_API_KEY }, // keep header for forward compatibility
+      body: JSON.stringify(body)
     });
-    if (!r.ok) return null;
+    if (!r.ok) {
+      const txt = await r.text();
+      console.error('[assistant][tavily] HTTP', r.status, txt.slice(0,300));
+      return null;
+    }
     const j = await r.json();
-    const answer = j.answer || ''; // Tavily standard answer field
+    if (j.error) {
+      console.error('[assistant][tavily] API error', j.error);
+      return null;
+    }
+    const answer = j.answer || '';
     const refs = (j.results || []).map((res: any) => `- ${res.title}: ${res.url}`).join('\n');
     return { answer, refs };
-  } catch {
+  } catch (e) {
+    console.error('[assistant][tavily] exception', e && (e as any).message ? (e as any).message : e);
     return null;
   }
 }
@@ -147,12 +157,22 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
     enrichmentBlock += `\nPhrase: ${phrase}\nCipher Values:\n` + cipherValues.map(c => `${c.cipher}: ${c.value}`).join('\n');
   }
 
-  // Optional Tavily search if user explicitly asks for research
+  // Decide whether to attempt Tavily search
   let tavilyData = null;
-  if (/search|research|latest|current|web|lookup/i.test(message) && TAVILY_API_KEY) {
+  let doSearch = false;
+  const lowered = message.toLowerCase();
+  if (/search|research|latest|current|web|lookup|news/.test(lowered)) doSearch = true;
+  // Respect opt-out phrases
+  if (/no search|offline only|skip search/.test(lowered)) doSearch = false;
+  // Mode-based triggers
+  const mode = meta && typeof meta === 'object' ? (meta as any).mode : undefined;
+  if (!doSearch && (mode === 'esoteric' || mode === 'crosswalk')) doSearch = true;
+  if (doSearch && TAVILY_API_KEY) {
     tavilyData = await tavilyEnrich(message);
     if (tavilyData) {
       enrichmentBlock += `\nTavily Summary: ${tavilyData.answer}\nReferences:\n${tavilyData.refs}`;
+    } else {
+      enrichmentBlock += `\n[Tavily search attempted but returned no results]`;
     }
   }
 
@@ -160,7 +180,7 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
 
   try {
     const reply = await callOpenAI(messages, image);
-    return new Response(JSON.stringify({ reply, used: { model: MODEL, tavily: !!tavilyData, base: OPENAI_BASE_URL } }), {
+    return new Response(JSON.stringify({ reply, used: { model: MODEL, tavily: !!tavilyData, attemptedSearch: doSearch, base: OPENAI_BASE_URL } }), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control':'no-store', ...CORS }
     });
   } catch (e: any) {
