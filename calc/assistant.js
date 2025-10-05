@@ -5,6 +5,7 @@ const SUPABASE_FUNCTION_NAME = 'gematria-assistant';
 let assistantOpen = false;
 let assistantStreaming = false;
 let assistantMessages = []; // {role:'user'|'assistant'|'error', content:string}
+let lastSourceUrls = new Set();
 
 // Mode palette (synced with docs/assistant-architecture.md)
 const ASSISTANT_MODES = [
@@ -154,6 +155,10 @@ async function sendAssistantPrompt(){
   assistantStreaming = true;
   document.getElementById('AssistantSendBtn').style.display='none';
   document.getElementById('AssistantStopBtn').style.display='inline-flex';
+  // Add a temporary placeholder assistant message (loading)
+  const loadingId = 'assistant-loading-' + Date.now();
+  assistantMessages.push({ role:'assistant', content: '⏳ Gathering sources…', _loading: true, _id: loadingId });
+  renderAssistantMessages();
   try {
     const payload = await buildAssistantPayloadAsync(value);
     const client = (window.supabaseClient || (window.supabase && window.supabase.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null));
@@ -167,15 +172,27 @@ async function sendAssistantPrompt(){
       console.error('[Assistant] Function responded with error field:', data.error);
       throw new Error(data.error);
     }
+    // Remove loading placeholder
+    assistantMessages = assistantMessages.filter(m => !m._loading);
     let reply = (data && (data.reply || data.answer || data.content)) ? (data.reply || data.answer || data.content) : JSON.stringify(data);
-    // Remove any residual provider wording if appears
     reply = reply.replace(/\bTavily\b/gi,'web sources');
-    // Append sources list if present
-    if (Array.isArray(data?.sources) && data.sources.length) {
-      const srcList = data.sources.map(s => `• ${s.title} (${s.url})`).join('\n');
-      reply += `\n\nSources:\n${srcList}`;
+    let sourcesBlock = '';
+    if (Array.isArray(data?.sources)) {
+      const deduped = [];
+      for (const s of data.sources) {
+        if (s && s.url && !lastSourceUrls.has(s.url)) {
+          lastSourceUrls.add(s.url);
+          deduped.push(s);
+        }
+      }
+      if (deduped.length) {
+        sourcesBlock = '\n\n<div class="assistant-sources-toggle" onclick="toggleSources(this)">Sources ('+deduped.length+') ▾</div>'+
+          '<div class="assistant-sources" style="display:none;"><ul>'+
+          deduped.map(s=>`<li><span class="src-title">${escapeHtml(s.title||'(untitled)')}</span> — <a href="${escapeHtml(s.url)}" target="_blank" rel="noopener">${escapeHtml(s.url)}</a></li>`).join('')+
+          '</ul></div>';
+      }
     }
-    pushAssistantMessage('assistant', reply);
+    pushAssistantMessage('assistant', reply + sourcesBlock);
     setAssistantStatus('Ready');
   } catch (e){
     console.warn(e);
@@ -235,6 +252,15 @@ function sanitizeOutput(txt){
   // Replace bare http(s) URLs with angle form to be post-processed
   return txt.replace(/https?:\/\/\S+/g, u=>`<${u}>`);
 }
+
+// Toggle sources visibility
+window.toggleSources = function(el){
+  const box = el.nextElementSibling;
+  if (!box) return;
+  const open = box.style.display !== 'none';
+  box.style.display = open ? 'none' : 'block';
+  el.textContent = el.textContent.replace(/▾|▸/g,'') + (open ? ' ▸' : ' ▾');
+};
 
 // Expose mode functions
 window.setAssistantMode = setAssistantMode;
