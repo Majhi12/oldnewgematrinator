@@ -10,6 +10,8 @@ var opt_PhraseLimit = 5 // word limit to enter input as separate phrases, "End" 
 var opt_CompactHistoryTable = false; // disable Cipher names, no 25 phrase break, compact mode
 var opt_WeightedAutoHlt = false; // color grade matches found with auto highlighter (most frequest is the brightest)
 var opt_MatrixCodeRain = false; // set to true to enable by default
+var opt_MatrixRainFaint = true; // new: faint style by default
+
 
 // only one active
 var opt_filtShowMatchingCiphers = true; // filter shows only ciphers that have matching values
@@ -25,6 +27,10 @@ function Page_Launch() {
 	Populate_MenuBar()
 	Build_CharTable(ciphersOn[0])
 	breakCipher = ciphersOn[0].Nickname
+	// Initialize Supabase (history sync) if integration script loaded
+	if (typeof initSupabase === 'function') {
+		initSupabase();
+	}
 }
 
 function Populate_MenuBar() {
@@ -34,7 +40,13 @@ function Populate_MenuBar() {
 	hStr = '<center><div class="MenuLink"><a href="javascript:Open_Ciphers()">Ciphers</a></div>  |  '
 	hStr += '<div class="MenuLink"><a href="javascript:Open_Options()">Options</a></div>  |  '
 	hStr += '<div class="MenuLink"><a href="https://github.com/Alektryon/oldnewgematrinator" target="_blank">GitHub (changelog)</a></div>  |  '
-	hStr += '<div class="MenuLink2"><a href="datecalc/DateCalculator.html" target="_blank">Date Calculator</a></div>'
+	hStr += '<div class="MenuLink2"><a href="datecalc/DateCalculator.html" target="_blank">Date Calculator</a></div>  |  '
+	// Assistant link (ensure function exists)
+	hStr += '<div class="MenuLink"><a href="javascript:toggleAssistant(true)">Assistant</a></div>  |  '
+	// Theme toggle
+	hStr += '<div class="MenuLink"><a href="javascript:ToggleBrand()">Theme</a></div>  |  '
+	// Matrix rain toggle (faint/disable)
+	hStr += '<div class="MenuLink"><a href="javascript:ToggleMatrixRain()">Rain</a></div>'
 	hStr += '<BR>'
 	hStr += '<div class="MenuLink">(Code based on <a href="https://gematrinator.com/calculator" target="_blank">Gematrinator.com</a>)</div>'
 	hStr += '<BR></center>'
@@ -261,6 +273,10 @@ function Open_History() {
 
 	ms += '</tbody></table>'
 	tArea.innerHTML = ms
+	// Queue background sync of history to Supabase
+	if (typeof queueSupabaseSync === 'function') {
+		queueSupabaseSync();
+	}
 }
 
 function getSum(total, num) {
