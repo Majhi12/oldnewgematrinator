@@ -2,13 +2,24 @@
 // deno-lint-ignore-file no-explicit-any
 // <reference lib="deno.unstable" />
 // <reference lib="dom" />
-// Runtime: deno (Supabase). Handles AI + optional Tavily search enrichment.
-// Environment variables expected (configure in Supabase dashboard Secrets):
-//   OPENAI_API_KEY   - OpenAI key
-//   TAVILY_API_KEY   - (optional) Tavily key for web enrichment
-//   MODEL_NAME       - (optional) override model (default: gpt-4o-mini)
-// NOTE: This function never exposes keys to the client.
-// Deployed via: supabase functions deploy gematria-assistant --no-verify-jwt (or keep JWT if you want auth)
+// Runtime: Deno (Supabase). Handles AI + optional Tavily search enrichment.
+// Environment variables (set in Supabase Dashboard > Project Settings > Secrets):
+//   OPENAI_API_KEY      (required)
+//   OPENAI_MODEL        (optional; overrides MODEL_NAME)
+//   MODEL_NAME          (legacy optional)
+//   OPENAI_BASE_URL     (optional; custom/proxy base, e.g. https://api.openai.com/v1 )
+//   TAVILY_API_KEY      (optional; enables web enrichment on demand)
+// Defaults:
+//   Model falls back to 'gpt-4o' instead of mini variant unless overridden.
+// Deployment:
+//   supabase functions deploy gematria-assistant --no-verify-jwt
+// NOTE: Keys never reach the browser; only this edge function sees them.
+
+// Local TypeScript editors without Deno plugin may show 'Cannot find name "Deno"'.
+// Provide a lightweight ambient declaration to silence red squiggles in VS Code.
+// (Supabase runtime supplies the real Deno global.)
+// @ts-ignore
+declare const Deno: any; // harmless for edge runtime, improves local DX
 
 import 'jsr:@supabase/functions@1.4.5/types';
 
@@ -24,32 +35,52 @@ interface Payload {
 
 const OPENAI_API_KEY = Deno.env.get('OPENAI_API_KEY') ?? '';
 const TAVILY_API_KEY = Deno.env.get('TAVILY_API_KEY');
-const MODEL_NAME = Deno.env.get('MODEL_NAME') ?? 'gpt-4o-mini';
+const OPENAI_BASE_URL = (Deno.env.get('OPENAI_BASE_URL') || 'https://api.openai.com/v1').replace(/\/$/, '');
+// Model precedence: OPENAI_MODEL > MODEL_NAME > default
+const MODEL = (Deno.env.get('OPENAI_MODEL') || Deno.env.get('MODEL_NAME') || 'gpt-4o').trim();
 
 if (!OPENAI_API_KEY) {
-  console.error('Missing OPENAI_API_KEY secret');
+  console.error('[assistant] Missing OPENAI_API_KEY secret (set it then redeploy).');
 }
 
-async function callOpenAI(messages: { role: string; content: string }[], imageB64?: string | null) {
-  const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${OPENAI_API_KEY}`,
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({
-      model: MODEL_NAME,
-      messages,
-      temperature: 0.4
-    })
-  });
-  if (!resp.ok) {
-    const txt = await resp.text();
-    throw new Error(`OpenAI error ${resp.status}: ${txt}`);
+interface OpenAIMessage { role: string; content: string }
+
+function buildOpenAIBody(messages: OpenAIMessage[]) {
+  return {
+    model: MODEL,
+    messages,
+    temperature: 0.4,
+    // You can add max_tokens or response_format here if needed
+  };
+}
+
+async function callOpenAI(messages: OpenAIMessage[], imageB64?: string | null) {
+  if (!OPENAI_API_KEY) throw new Error('OPENAI_API_KEY not configured');
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 45000); // 45s safety timeout
+  try {
+    const resp = await fetch(`${OPENAI_BASE_URL}/chat/completions`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${OPENAI_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(buildOpenAIBody(messages)),
+      signal: controller.signal
+    });
+    if (!resp.ok) {
+      const txt = await resp.text();
+      throw new Error(`OpenAI ${resp.status}: ${txt.slice(0,800)}`);
+    }
+    const json = await resp.json();
+    const content = json.choices?.[0]?.message?.content || '(no reply)';
+    return content.trim();
+  } catch (e: any) {
+    if (e.name === 'AbortError') throw new Error('OpenAI request timed out');
+    throw e;
+  } finally {
+    clearTimeout(timeout);
   }
-  const json = await resp.json();
-  const content = json.choices?.[0]?.message?.content || '(no reply)';
-  return content.trim();
 }
 
 async function tavilyEnrich(query: string) {
@@ -81,7 +112,7 @@ Deno.serve(async (req: Request) => {
     return new Response(JSON.stringify({ error: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
 
-  const { message, phrase, cipherValues, history, image } = payload || {};
+  const { message, phrase, cipherValues, history, image, meta } = payload || {};
   if (!message || typeof message !== 'string') {
     return new Response(JSON.stringify({ error: 'Missing message' }), { status: 400, headers: { 'Content-Type': 'application/json' } });
   }
@@ -92,9 +123,7 @@ If cipherValues are supplied, reference notable patterns, equalities, or interes
 If user asks for research or current info, optionally integrate Tavily enrichment snippet if available.`;
 
   // Build conversation for OpenAI
-  const messages: { role: string; content: string }[] = [
-    { role: 'system', content: system }
-  ];
+  const messages: OpenAIMessage[] = [ { role: 'system', content: system } ];
   if (history && Array.isArray(history)) {
     history.slice(-8).forEach(h => {
       if (h.role === 'user' || h.role === 'assistant') {
@@ -120,11 +149,13 @@ If user asks for research or current info, optionally integrate Tavily enrichmen
   messages.push({ role: 'user', content: `${message}${enrichmentBlock ? '\n\nContext:\n'+enrichmentBlock : ''}` });
 
   try {
-  const reply = await callOpenAI(messages, image);
-    return new Response(JSON.stringify({ reply, used: { model: MODEL_NAME, tavily: !!tavilyData } }), {
+    const reply = await callOpenAI(messages, image);
+    return new Response(JSON.stringify({ reply, used: { model: MODEL, tavily: !!tavilyData, base: OPENAI_BASE_URL } }), {
       headers: { 'Content-Type': 'application/json', 'Cache-Control':'no-store' }
     });
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: String(e && e.message ? e.message : e) }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    const errMsg = String(e && e.message ? e.message : e);
+    console.error('[assistant] error', errMsg);
+    return new Response(JSON.stringify({ error: errMsg }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 });
