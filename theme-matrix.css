@@ -20,6 +20,23 @@ html,body{
   font-family:'JetBrains Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 
+/* Brand header */
+#gv-header a{ color:var(--accent); }
+#gv-header a:hover{ text-shadow:var(--shadow-neon); }
+#gv-logo{ max-width:100%; height:auto; }
+@media (max-width:760px){
+  #gv-header{ flex-direction:column; align-items:flex-start !important; }
+  #gv-header .gv-logo-wrap{ justify-content:flex-start; }
+  #gv-logo{ height:60px !important; }
+}
+
+/* Modern menu bar */
+.gv-menu-bar{ display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:flex-start; padding:12px 4px 4px; }
+.gv-menu-item{ font-family:'Inter',sans-serif; font-size:13px; letter-spacing:.12em; padding:6px 10px; border:1px solid var(--border); border-radius:6px; background:linear-gradient(180deg,rgba(82,255,168,.08),rgba(82,255,168,.02)); transition:.15s; }
+.gv-menu-item:hover{ color:var(--accent); border-color:var(--accent); box-shadow:var(--shadow-neon); }
+.gv-menu-item.accent{ font-weight:600; color:var(--accent); border-color:var(--accent); box-shadow:0 0 6px rgba(82,255,168,.35); }
+.gv-menu-item.accent:hover{ box-shadow:var(--shadow-neon); }
+
 /* center the legacy <center> content but keep width fluid */
 body > center{
   display:block;

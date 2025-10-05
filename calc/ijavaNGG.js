@@ -37,19 +37,16 @@ function Populate_MenuBar() {
 	var hStr
 	var mSpot = document.getElementById("MenuSpot")
 
-	hStr = '<center><div class="MenuLink"><a href="javascript:Open_Ciphers()">Ciphers</a></div>  |  '
-	hStr += '<div class="MenuLink"><a href="javascript:Open_Options()">Options</a></div>  |  '
-	hStr += '<div class="MenuLink"><a href="https://github.com/Alektryon/oldnewgematrinator" target="_blank">GitHub (changelog)</a></div>  |  '
-	hStr += '<div class="MenuLink2"><a href="datecalc/DateCalculator.html" target="_blank">Date Calculator</a></div>  |  '
-	// Assistant link (ensure function exists)
-	hStr += '<div class="MenuLink"><a href="javascript:toggleAssistant(true)">Assistant</a></div>  |  '
-	// Theme toggle
-	hStr += '<div class="MenuLink"><a href="javascript:ToggleBrand()">Theme</a></div>  |  '
-	// Matrix rain toggle (faint/disable)
-	hStr += '<div class="MenuLink"><a href="javascript:ToggleMatrixRain()">Rain</a></div>'
-	hStr += '<BR>'
-	hStr += '<div class="MenuLink">(Code based on <a href="https://gematrinator.com/calculator" target="_blank">Gematrinator.com</a>)</div>'
-	hStr += '<BR></center>'
+	// Modernized menu layout (slightly larger, simplified, removed legacy footer text)
+	hStr = '<div class="gv-menu-bar">'
+	hStr += '<a class="gv-menu-item" href="javascript:Open_Ciphers()">Ciphers</a>'
+	hStr += '<a class="gv-menu-item" href="javascript:Open_Options()">Options</a>'
+	hStr += '<a class="gv-menu-item" href="https://github.com/Alektryon/oldnewgematrinator" target="_blank">GitHub</a>'
+	hStr += '<a class="gv-menu-item" href="datecalc/DateCalculator.html" target="_blank">Date Calc</a>'
+	hStr += '<a class="gv-menu-item accent" href="javascript:toggleAssistant(true)">Assistant</a>'
+	hStr += '<a class="gv-menu-item" href="javascript:ToggleBrand()">Theme</a>'
+	hStr += '<a class="gv-menu-item" href="javascript:ToggleMatrixRain()">Rain</a>'
+	hStr += '</div>'
 	mSpot.innerHTML = hStr
 }
 

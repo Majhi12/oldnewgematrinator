@@ -201,3 +201,5 @@ window.setAssistantMode = setAssistantMode;
 // Expose toggle to menu
 window.toggleAssistant = toggleAssistant;
 window.refreshAssistantSnapshot = refreshAssistantSnapshot;
+// Alias for header quick link reliability
+window.showAssistant = () => toggleAssistant(true);
